@@ -89,7 +89,7 @@ void test_basic_operations(void)
     /* 使用宏设置参数 */
     PARAM_SET_INT(PARAM_ID_NET_LINK_STATUS, 1);
     PARAM_SET_INT(PARAM_ID_NET_SIGNAL_STRENGTH, 85);
-    PARAM_SET_STRING(PARAM_ID_NET_IP_ADDR, def_ip);
+    PARAM_SET_STRING(PARAM_ID_NET_IP_ADDR, "def_ip");
     
     /* 验证修改 */
     printf("修改后: link=%d, signal=%d, ip='%s'\n",
@@ -164,12 +164,9 @@ int main(int argc, char *argv[])
     printf("初始化成功\n");
     
     /* 注册参数表 */
-    ParamTableRegister(TBStatus, "TBStatus", 
-                       sizeof(TBStatus)/sizeof(ParamListTable), NULL, NULL);
-    ParamTableRegister(TBConfig, "TBConfig",
-                       sizeof(TBConfig)/sizeof(ParamListTable), NULL, NULL);
-    ParamTableRegister(TBCtrl, "TBCtrl",
-                       sizeof(TBCtrl)/sizeof(ParamListTable), NULL, NULL);
+    ParamTableRegister(TBStatus, "TBStatus",sizeof(TBStatus)/sizeof(ParamListTable), NULL, NULL);
+    ParamTableRegister(TBConfig, "TBConfig",sizeof(TBConfig)/sizeof(ParamListTable), NULL, NULL);
+    ParamTableRegister(TBCtrl, "TBCtrl",sizeof(TBCtrl)/sizeof(ParamListTable), NULL, NULL);
     printf("参数表注册完成\n");
     
     /* 运行测试 */
@@ -177,10 +174,6 @@ int main(int argc, char *argv[])
     test_config();
     test_control();
     
-    /* 保存参数 */
-    printf("\n========== 保存参数 ==========\n");
-    ParamManagerSave();
-    printf("参数已保存到 device.ini\n");
     
     /* 清理 */
     ParamManagerRelease();

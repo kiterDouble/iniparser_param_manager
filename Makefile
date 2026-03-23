@@ -29,15 +29,18 @@ SRCS = $(SRC_DIR)/param_manager.c \
 # 示例和测试源文件
 EXAMPLE_SRC = $(EXAMPLES_DIR)/example.c
 TEST_SRC = $(TESTS_DIR)/test_param_manager.c
+MODIFIED_TEST_SRC = $(TESTS_DIR)/test_modified.c
 
 # 目标文件
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 EXAMPLE_OBJ = $(BUILD_DIR)/example.o
 TEST_OBJ = $(BUILD_DIR)/test_param_manager.o
+MODIFIED_TEST_OBJ = $(BUILD_DIR)/test_modified.o
 
 # 目标可执行文件
 TARGET = $(BUILD_DIR)/param_example
 TEST_TARGET = $(BUILD_DIR)/param_test
+MODIFIED_TEST_TARGET = $(BUILD_DIR)/test_modified
 
 # 静态库
 STATIC_LIB = $(BUILD_DIR)/libparammanager.a
@@ -70,9 +73,17 @@ $(TEST_TARGET): $(TEST_OBJ) $(STATIC_LIB)
 	$(CC) $(CFLAGS) -o $@ $(TEST_OBJ) $(STATIC_LIB) $(INCLUDES)
 	@echo "测试程序编译完成: $@"
 
+$(MODIFIED_TEST_TARGET): $(MODIFIED_TEST_OBJ) $(STATIC_LIB)
+	$(CC) $(CFLAGS) -o $@ $(MODIFIED_TEST_OBJ) $(STATIC_LIB) $(INCLUDES)
+	@echo "Modified测试程序编译完成: $@"
+
 test: dirs $(TEST_TARGET)
 	@echo "运行测试..."
 	@cd $(BUILD_DIR) && ./$(notdir $(TEST_TARGET))
+
+test-modified: dirs $(MODIFIED_TEST_TARGET)
+	@echo "运行Modified测试..."
+	@cd $(BUILD_DIR) && ./$(notdir $(MODIFIED_TEST_TARGET))
 
 #==============================================================================
 # 编译静态库
@@ -102,6 +113,9 @@ $(BUILD_DIR)/example.o: $(EXAMPLES_DIR)/example.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/test_param_manager.o: $(TESTS_DIR)/test_param_manager.c | dirs
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD_DIR)/test_modified.o: $(TESTS_DIR)/test_modified.c | dirs
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 #==============================================================================

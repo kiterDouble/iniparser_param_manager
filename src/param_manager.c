@@ -653,6 +653,8 @@ int TBParameterSetByID(PARAM_ID pid, int index, void *pValue)
         value_changed = !compare_value(item->type, &item->value, &old_value, item->size);
         if (value_changed) {
             item->modified = 1;  /* 标记为已修改 */
+            /* 值改变后立即保存到文件 */
+            save_to_ini();
         }
     }
     
@@ -688,6 +690,7 @@ int TBParameterGetByIDList(ParamList *pList, int number)
     for (i = 0; i < number; i++) {
         ParamStorageItem *item;
         int is_control;
+        int index = 0;  /* 默认index为0 */
         
         /* 根据PID查找存储项 */
         item = find_storage_item(pList[i].pid);
@@ -696,7 +699,11 @@ int TBParameterGetByIDList(ParamList *pList, int number)
             continue;
         }
         
-        if (pList[i].index >= item->size) {
+        /* 使用传入的index，默认为0 */
+        index = pList[i].index;
+        if (index < 0) index = 0;
+        
+        if (index >= item->size) {
             ret = PARAM_ERR_RANGE;
             continue;
         }
@@ -721,12 +728,12 @@ int TBParameterGetByIDList(ParamList *pList, int number)
                 if (is_control) item->value.s[0] = '\0';
                 break;
             case PARAM_TYPE_ARRAY_INT:
-                pList[i].valueInt = item->value.ai[pList[i].index];
-                if (is_control) item->value.ai[pList[i].index] = 0;
+                pList[i].valueInt = item->value.ai[index];
+                if (is_control) item->value.ai[index] = 0;
                 break;
             case PARAM_TYPE_ARRAY_DOUBLE:
-                pList[i].valueDouble = item->value.ad[pList[i].index];
-                if (is_control) item->value.ad[pList[i].index] = 0;
+                pList[i].valueDouble = item->value.ad[index];
+                if (is_control) item->value.ad[index] = 0;
                 break;
             default:
                 ret = PARAM_ERR_TYPE;
@@ -747,6 +754,7 @@ int TBParameterSetByIDList(ParamList *pList, int number)
 {
     int i;
     int ret = PARAM_ERR_OK;
+    int any_value_changed = 0;  /* 标记是否有任何值改变 */
     
     if (!g_param_mgr.initialized) {
         return PARAM_ERR_INIT;
@@ -816,6 +824,7 @@ int TBParameterSetByIDList(ParamList *pList, int number)
         /* 标记为已修改 */
         if (value_changed) {
             item->modified = 1;
+            any_value_changed = 1;  /* 记录有值改变 */
         }
         
         item_ret = PARAM_ERR_OK;
@@ -824,6 +833,11 @@ int TBParameterSetByIDList(ParamList *pList, int number)
         if (item_ret == PARAM_ERR_OK) {
             notify_callbacks(pList[i].pid);
         }
+    }
+    
+    /* 如果有任何值改变，立即保存到文件 */
+    if (any_value_changed) {
+        save_to_ini();
     }
     
     sem_post(&g_param_mgr.sem);
@@ -926,6 +940,7 @@ int ParamManagerSave(void)
 int ParamManagerRestoreDefault(void)
 {
     int i;
+    int any_value_changed = 0;  /* 标记是否有任何值改变 */
     
     if (!g_param_mgr.initialized) {
         return PARAM_ERR_INIT;
@@ -935,8 +950,18 @@ int ParamManagerRestoreDefault(void)
     
     for (i = 0; i < g_param_mgr.storage_count; i++) {
         ParamStorageItem *item = &g_param_mgr.storage[i];
-        copy_value(item->type, &item->value, &item->default_value, item->size);
-        notify_callbacks(item->pid);
+        /* 检查值是否真的改变 */
+        if (!compare_value(item->type, &item->value, &item->default_value, item->size)) {
+            copy_value(item->type, &item->value, &item->default_value, item->size);
+            item->modified = 1;  /* 标记为已修改 */
+            any_value_changed = 1;  /* 记录有值改变 */
+            notify_callbacks(item->pid);
+        }
+    }
+    
+    /* 如果有任何值改变，立即保存到文件 */
+    if (any_value_changed) {
+        save_to_ini();
     }
     
     sem_post(&g_param_mgr.sem);
